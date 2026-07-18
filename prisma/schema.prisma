@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id          String      @id @default(cuid())
+  name        String
+  location    String
+  createdAt   DateTime    @default(now())
+  users       User[]
+  products    Product[]
+  clients     Client[]
+  staff       Staff[]
+  insights    AIInsight[]
+  activities  ActivityLog[]
+}
+
+model User {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  email       String   @unique
+  role        Role
+  passwordHash String
+  createdAt   DateTime @default(now())
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  businessId    String
+  business      Business        @relation(fields: [businessId], references: [id])
+  categoryId    String?
+  category      Category?       @relation(fields: [categoryId], references: [id])
+  supplierId    String?
+  supplier      Supplier?       @relation(fields: [supplierId], references: [id])
+  name          String
+  sku           String          @unique
+  unit          String
+  stock         Int
+  reorderPoint  Int
+  dailyRunRate  Float
+  margin        Float
+  stockMoves    StockMovement[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  products  Product[]
+}
+
+model Supplier {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String?
+  products  Product[]
+}
+
+model StockMovement {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  kind        MovementKind
+  quantity    Int
+  actorId     String?
+  note        String?
+  createdAt   DateTime @default(now())
+}
+
+model Client {
+  id          String         @id @default(cuid())
+  businessId  String
+  business    Business       @relation(fields: [businessId], references: [id])
+  name        String
+  segment     String
+  area        String
+  trustScore  Int
+  ledgers     ClientLedger[]
+  payments    Payment[]
+  sales       Sale[]
+}
+
+model ClientLedger {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  balance     Float
+  overdueDays Int
+  updatedAt   DateTime @updatedAt
+}
+
+model Sale {
+  id          String      @id @default(cuid())
+  clientId    String
+  client      Client      @relation(fields: [clientId], references: [id])
+  total       Float
+  createdAt   DateTime    @default(now())
+  items       SaleItem[]
+}
+
+model SaleItem {
+  id          String   @id @default(cuid())
+  saleId      String
+  sale        Sale     @relation(fields: [saleId], references: [id])
+  productId   String
+  quantity    Int
+  unitPrice   Float
+}
+
+model Payment {
+  id          String   @id @default(cuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id])
+  amount      Float
+  mode        String
+  createdAt   DateTime @default(now())
+}
+
+model Staff {
+  id              String       @id @default(cuid())
+  businessId      String
+  business        Business     @relation(fields: [businessId], references: [id])
+  name            String
+  roleLabel       String
+  shift           String
+  attendances     Attendance[]
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  staffId     String
+  staff       Staff    @relation(fields: [staffId], references: [id])
+  date        DateTime
+  status      String
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  actor       String
+  action      String
+  target      String
+  createdAt   DateTime @default(now())
+}
+
+model AIInsight {
+  id           String   @id @default(cuid())
+  businessId   String
+  business     Business @relation(fields: [businessId], references: [id])
+  kind         String
+  title        String
+  reason       String
+  recommendation String
+  status       String
+  createdAt    DateTime @default(now())
+}
+
+enum Role {
+  owner
+  manager
+  staff
+}
+
+enum MovementKind {
+  stock_in
+  stock_out
+  correction
+}
